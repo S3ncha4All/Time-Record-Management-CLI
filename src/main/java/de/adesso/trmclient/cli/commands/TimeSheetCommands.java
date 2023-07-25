@@ -26,8 +26,8 @@ public class TimeSheetCommands {
         return timeSheetEndpointWrapper.deleteTimeSheet(id);
     }
 
-    @Command(command = "show", alias = "s", description = "Shows a complete Time Sheet", group = "Time Sheet")
-    public String show(@Option(required = true, longNames = "id", shortNames = 'i', description = "ID of Time Sheet to show") Long id) {
+    @Command(command = "view", alias = "v", description = "View the complete Time Sheet(Settings, Bookings)", group = "Time Sheet")
+    public String view(@Option(required = true, longNames = "id", shortNames = 'i', description = "ID of Time Sheet to show") Long id) {
         return timeSheetEndpointWrapper.readTimeSheet(id);
     }
 }
