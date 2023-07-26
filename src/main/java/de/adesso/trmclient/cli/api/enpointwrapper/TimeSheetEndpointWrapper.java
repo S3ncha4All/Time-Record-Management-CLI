@@ -5,12 +5,10 @@ import de.adesso.trmclient.cli.api.dto.SettingDto;
 import de.adesso.trmclient.cli.api.dto.TimeSheetDto;
 import de.adesso.trmclient.cli.api.enpointwrapper.model.BookingView;
 import de.adesso.trmclient.cli.api.enpointwrapper.model.Tuple;
-import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.http.HttpMethod;
 import org.springframework.shell.table.*;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -92,12 +90,12 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
                                 duration = "ongoing";
                             } else {
                                 long seconds = b.getBegin().until(b.getEnd(), ChronoUnit.SECONDS);
-                                duration = ""+seconds;
+                                duration = String.valueOf(seconds);
                             }
                         }
                         bv.setDuration(duration);
                         StringBuilder sb = new StringBuilder();
-                        b.getTags().forEach(t -> sb.append("#"+t.getName()+" "));
+                        b.getTags().forEach(t -> sb.append("#").append(t.getName()).append(" "));
                         bv.setTags(sb.toString());
                         return bv;
                     }
