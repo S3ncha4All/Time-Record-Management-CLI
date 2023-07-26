@@ -21,5 +21,7 @@ public class BookingView {
 
     private String end;
 
+    private String duration;
+
     private String tags;
 }

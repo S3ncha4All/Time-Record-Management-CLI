@@ -13,7 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 public class BookingDto {
 
-    @NotNull
     private Long id;
 
     private LocalDateTime begin;

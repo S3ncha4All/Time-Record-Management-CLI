@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
@@ -31,7 +32,11 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
         headers.put("bookingCount", "Bookings:");
         TableModel model = new BeanListTableModel<>(ts, headers);
         TableBuilder builder = buildTable(model);
-        builder.on(CellMatchers.column(2)).addSizer(new AbsoluteWidthSizeConstraints(10));
+        builder.on(CellMatchers.column(0)).addSizer(new AbsoluteWidthSizeConstraints(10));
+        builder.on(CellMatchers.column(0)).addAligner(SimpleHorizontalAligner.center);
+        builder.on(CellMatchers.column(1)).addSizer(new AbsoluteWidthSizeConstraints(50));
+        builder.on(CellMatchers.column(2)).addSizer(new AbsoluteWidthSizeConstraints(12));
+        builder.on(CellMatchers.column(2)).addAligner(SimpleHorizontalAligner.center);
         return builder.build().render(2);
     }
 
@@ -47,6 +52,10 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
                 {"name", dto.getName()}
         });
         TableBuilder builder = buildTable(model);
+        builder.on(CellMatchers.column(0)).addSizer(new AbsoluteWidthSizeConstraints(10));
+        builder.on(CellMatchers.column(0)).addAligner(SimpleHorizontalAligner.center);
+        builder.on(CellMatchers.column(1)).addSizer(new AbsoluteWidthSizeConstraints(50));
+        builder.on(CellMatchers.column(1)).addAligner(SimpleHorizontalAligner.center);
         output += builder.build().render(2);
         output += "\n";
         if(dto.getSettings() != null && !dto.getSettings().isEmpty()) {
@@ -57,7 +66,12 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
             headers.put("value", "Value:");
             model = new BeanListTableModel<>(settings, headers);
             builder = buildTable(model);
+            builder.on(CellMatchers.column(0)).addSizer(new AbsoluteWidthSizeConstraints(10));
+            builder.on(CellMatchers.column(0)).addAligner(SimpleHorizontalAligner.center);
+            builder.on(CellMatchers.column(1)).addSizer(new AbsoluteWidthSizeConstraints(50));
+            builder.on(CellMatchers.column(0)).addAligner(SimpleHorizontalAligner.center);
             builder.on(CellMatchers.column(2)).addSizer(new AbsoluteWidthSizeConstraints(50));
+            builder.on(CellMatchers.column(0)).addAligner(SimpleHorizontalAligner.center);
             output += builder.build().render(settings.size());
             output += "\n";
         }
@@ -67,9 +81,21 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
                     b -> {
                         BookingView bv = new BookingView();
                         bv.setId(b.getId());
-                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm dd.MM.yyyy");
+                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm - dd.MM.yyyy");
                         bv.setBegin(b.getBegin()!=null?b.getBegin().format(dtf):"");
                         bv.setEnd(b.getEnd()!=null?b.getEnd().format(dtf):"");
+                        String duration = "";
+                        if(b.getBegin() == null) {
+                            duration = "not started";
+                        } else {
+                            if(b.getEnd() == null) {
+                                duration = "ongoing";
+                            } else {
+                                long seconds = b.getBegin().until(b.getEnd(), ChronoUnit.SECONDS);
+                                duration = ""+seconds;
+                            }
+                        }
+                        bv.setDuration(duration);
                         StringBuilder sb = new StringBuilder();
                         b.getTags().forEach(t -> sb.append("#"+t.getName()+" "));
                         bv.setTags(sb.toString());
@@ -80,11 +106,19 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
             headers.put("id", "ID:");
             headers.put("begin", "Start:");
             headers.put("end", "End:");
+            headers.put("duration", "Duration(in Hours):");
             headers.put("tags", "Tags:");
             model = new BeanListTableModel<>(bookings, headers);
             builder = buildTable(model);
-            builder.on(CellMatchers.column(2)).addSizer(new AbsoluteWidthSizeConstraints(50));
-            builder.on(CellMatchers.column(3)).addSizer(new AbsoluteWidthSizeConstraints(100));
+            builder.on(CellMatchers.column(0)).addSizer(new AbsoluteWidthSizeConstraints(10));
+            builder.on(CellMatchers.column(0)).addAligner(SimpleHorizontalAligner.center);
+            builder.on(CellMatchers.column(1)).addSizer(new AbsoluteWidthSizeConstraints(20));
+            builder.on(CellMatchers.column(1)).addAligner(SimpleHorizontalAligner.center);
+            builder.on(CellMatchers.column(2)).addSizer(new AbsoluteWidthSizeConstraints(20));
+            builder.on(CellMatchers.column(2)).addAligner(SimpleHorizontalAligner.center);
+            builder.on(CellMatchers.column(3)).addSizer(new AbsoluteWidthSizeConstraints(22));
+            builder.on(CellMatchers.column(3)).addAligner(SimpleHorizontalAligner.center);
+            builder.on(CellMatchers.column(4)).addSizer(new AbsoluteWidthSizeConstraints(100));
             output += builder.build().render(bookings.size());
         }
         return output;
@@ -95,8 +129,6 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
         builder.addOutlineBorder(BorderStyle.fancy_heavy);
         builder.addInnerBorder(BorderStyle.fancy_light);
         builder.addHeaderBorder(BorderStyle.fancy_double);
-        builder.on(CellMatchers.column(0)).addSizer(new AbsoluteWidthSizeConstraints(10));
-        builder.on(CellMatchers.column(1)).addSizer(new AbsoluteWidthSizeConstraints(50));
         return builder;
     }
 
