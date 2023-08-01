@@ -7,7 +7,7 @@ import org.springframework.shell.command.annotation.Option;
 
 @RequiredArgsConstructor
 @Command
-public class TagsAndBookingCommands {
+public class BookingCommands {
 
     private final BookingEndpoint bookingEndpoint;
 
@@ -20,7 +20,7 @@ public class TagsAndBookingCommands {
         return bookingEndpoint.book(timeSheetId, activate, tags);
     }
 
-    @Command(command = "start", alias = "s", description = "Start Booking with ID", group = "Booking")
+    @Command(command = "start", alias = "s", description = "Start Booking on Time Sheet with ID", group = "Booking")
     public String start(@Option(required = true, longNames = "id", shortNames = 'i', description = "ID of Booking") Long id) {
         return bookingEndpoint.startBooking(id);
     }
