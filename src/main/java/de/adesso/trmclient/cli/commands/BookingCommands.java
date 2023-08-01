@@ -34,9 +34,4 @@ public class TagsAndBookingCommands {
     public String remove(@Option(required = true, longNames = "id", shortNames = 'i', description = "ID of Booking") Long id) {
         return bookingEndpoint.removeBooking(id);
     }
-
-    @Command(command = "modify", alias = "m", description = "Modify Booking", group = "Booking")
-    public String modify(@Option(required = true, longNames = "id", shortNames = 'i', description = "ID of Booking") Long id) {
-        return "modify";
-    }
 }
