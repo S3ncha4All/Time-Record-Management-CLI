@@ -36,53 +36,69 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
         return builder.build().render(2);
     }
 
-
-
     public String readTimeSheet(Long id) {
-        String output = "";
+        StringBuilder output = new StringBuilder();
         Optional<TimeSheetDto> optDto = request(HttpMethod.GET, "http://localhost:8080/api/v1/time-sheet/"+id);
         TimeSheetDto dto = optDto.get();
-        LinkedHashMap<String, Object> headers = new LinkedHashMap<>();
-        headers.put("id", "ID:");
-        headers.put("name", "Name:");
+        output.append(displayTimeSheetSettings(dto));
+        output.append("\n");
+        output.append(displayTimeSheetBookings(dto));
+        output.append("\n");
+        output.append(displayTimeSheetHead(dto));
+        return output.toString();
+    }
+
+    private String displayTimeSheetHead(TimeSheetDto dto) {
         TableModel model = new ArrayTableModel(new Object[][]{
-                {"id", dto.getId()},
-                {"name", dto.getName()}
+                {"id:", dto.getId()},
+                {"name:", dto.getName()},
+                {"Overall Time booked(calculated):", calculateOverallTime(dto.getBookings())}
         });
         TableBuilder builder = buildTable(model);
-        constrain(builder, 10, 50);
+        constrain(builder, 40, 80);
         constrain(builder, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center);
-        output += builder.build().render(2);
-        output += "\n";
-        if(dto.getSettings() != null && !dto.getSettings().isEmpty()) {
-            List<SettingDto> settings = dto.getSettings();
-            headers = new LinkedHashMap<>();
-            headers.put("id", "ID:");
-            headers.put("name", "Key:");
-            headers.put("value", "Value:");
-            model = new BeanListTableModel<>(settings, headers);
-            builder = buildTable(model);
-            constrain(builder, 10, 50, 50);
-            constrain(builder, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center);
-            output += builder.build().render(settings.size());
-            output += "\n";
+        return builder.build().render(2);
+    }
+
+    private String displayTimeSheetSettings(TimeSheetDto dto) {
+        if(dto.getSettings() == null || dto.getSettings().isEmpty()) return "";
+        List<SettingDto> settings = dto.getSettings();
+        LinkedHashMap<String, Object> headers = new LinkedHashMap<>();
+        headers.put("id", "ID:");
+        headers.put("name", "Key:");
+        headers.put("value", "Value:");
+        TableModel model = new BeanListTableModel<>(settings, headers);
+        TableBuilder builder = buildTable(model);
+        constrain(builder, 10, 50, 50);
+        constrain(builder, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center);
+        return builder.build().render(settings.size());
+    }
+
+    private String displayTimeSheetBookings(TimeSheetDto dto) {
+        if(dto.getBookings() == null || dto.getBookings().isEmpty()) return "";
+        List<BookingDto> dtoBookings = dto.getBookings();
+        List<BookingView> bookings = dtoBookings.stream().map(this::createView).toList();
+        LinkedHashMap<String, Object> headers = new LinkedHashMap<>();
+        headers.put("id", "ID:");
+        headers.put("begin", "Start:");
+        headers.put("end", "End:");
+        headers.put("duration", "Duration(in Hours):");
+        headers.put("tags", "Tags:");
+        TableModel model = new BeanListTableModel<>(bookings, headers);
+        TableBuilder builder = buildTable(model);
+        constrain(builder, 10, 20, 20, 22, 100);
+        constrain(builder, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center);
+        return builder.build().render(bookings.size());
+    }
+
+    private String calculateOverallTime(List<BookingDto> bookings) {
+        long seconds = 0L;
+        if(bookings != null) {
+            for(BookingDto booking : bookings) {
+                seconds += calculateDuration(booking.getBegin(), booking.getEnd());
+            }
         }
-        if(dto.getBookings() != null && !dto.getBookings().isEmpty()) {
-            List<BookingDto> dtoBookings = dto.getBookings();
-            List<BookingView> bookings = dtoBookings.stream().map(this::createView).toList();
-            headers = new LinkedHashMap<>();
-            headers.put("id", "ID:");
-            headers.put("begin", "Start:");
-            headers.put("end", "End:");
-            headers.put("duration", "Duration(in Hours):");
-            headers.put("tags", "Tags:");
-            model = new BeanListTableModel<>(bookings, headers);
-            builder = buildTable(model);
-            constrain(builder, 10, 20, 20, 22, 100);
-            constrain(builder, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center, SimpleHorizontalAligner.center);
-            output += builder.build().render(bookings.size());
-        }
-        return output;
+        return formatSeconds(seconds);
     }
 
     private BookingView createView(BookingDto b) {
@@ -90,7 +106,7 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
         bv.setId(b.getId());
         bv.setBegin(dateView(b.getBegin()));
         bv.setEnd(dateView(b.getEnd()));
-        bv.setDuration(calculateDuration(b.getBegin(), b.getEnd()));
+        bv.setDuration(formatCalculatedDuration(b.getBegin(), b.getEnd()));
         StringBuilder sb = new StringBuilder();
         b.getTags().forEach(t -> sb.append("#").append(t.getName()).append(" "));
         bv.setTags(sb.toString());
@@ -103,17 +119,32 @@ public class TimeSheetEndpointWrapper extends BaseEndpointWrapper<TimeSheetDto> 
         return date.format(dtf);
     }
 
-    private String calculateDuration(LocalDateTime begin, LocalDateTime end) {
+    private String formatCalculatedDuration(LocalDateTime begin, LocalDateTime end) {
         if(begin == null) return "not started";
         String suffix = "";
         if(end == null) {
-            end = LocalDateTime.now();
             suffix = " (ongoing)";
         }
-        long seconds = begin.until(end, ChronoUnit.SECONDS);
+        long seconds = calculateDuration(begin, end);
+        return formatSeconds(seconds, suffix);
+    }
+
+    private String formatSeconds(long seconds) {
+        return this.formatSeconds(seconds, "");
+    }
+
+    private String formatSeconds(long seconds, String suffix) {
         long hh = seconds / 3600;
         long mm = (seconds % 3600) / 60;
         return String.format("%02d:%02d%s", hh, mm, suffix);
+    }
+
+    private long calculateDuration(LocalDateTime begin, LocalDateTime end) {
+        if(begin == null) return 0L;
+        if(end == null) {
+            end = LocalDateTime.now();
+        }
+        return begin.until(end, ChronoUnit.SECONDS);
     }
 
     private void constrain(TableBuilder builder, int... constraints) {
