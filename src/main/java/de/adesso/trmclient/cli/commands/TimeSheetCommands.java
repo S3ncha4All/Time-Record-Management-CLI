@@ -2,6 +2,7 @@ package de.adesso.trmclient.cli.commands;
 
 import de.adesso.trmclient.cli.api.enpointwrapper.TimeSheetEndpointWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.shell.command.CommandRegistration;
 import org.springframework.shell.command.annotation.Command;
 import org.springframework.shell.command.annotation.Option;
 
@@ -12,7 +13,7 @@ public class TimeSheetCommands {
     private final TimeSheetEndpointWrapper timeSheetEndpointWrapper;
 
     @Command(command = "create", alias = "c", description = "Create a new Time Sheet", group = "Time Sheet")
-    public String createTimesheet(@Option(required = true, longNames = "name", shortNames = 'n', description = "Name of Time Sheet") String name) {
+    public String createTimesheet(@Option(required = true, longNames = "name", shortNames = 'n', description = "Name of Time Sheet. (If Name has Space use \")", arity = CommandRegistration.OptionArity.EXACTLY_ONE) String name) {
         return timeSheetEndpointWrapper.createTimeSheet(name);
     }
 
